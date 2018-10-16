@@ -47,6 +47,16 @@
         var longitude;
         var sessionMap = {};
         var heatmapPoints = null;
+        var recordingSeconds = 30;
+        var secondsLeft = 0;
+
+        setInterval(function() {
+            if (secondsLeft > 0) {
+                secondsLeft --;
+                if (document.getElementById('recordButton').innerHTML.indexOf('Measuring') > -1) {
+                    document.getElementById('recordButton').innerHTML = 'Measuring (' + secondsLeft + ' s left';
+                }
+        }}, 1000);
 
         var map, usermarker;
         function initMap() {
@@ -326,11 +336,14 @@
         function measureAndRecord() {
             document.getElementById('recordButton').disabled = 'disabled';
             document.getElementById('endSessionButton').disabled = 'disabled';
+            secondsLeft = 30;
+            document.getElementById('recordButton').innerHTML = 'Measuring (' + secondsLeft + ' s left';
             // Reset sample interval
             sampleCount = 0;
             sampleSum = 0;
             // Sample for 3 seconds, then record to CDP
             setTimeout(function() {
+                document.getElementById('recordButton').innerHTML = 'Measure';
                 if (sampleCount === 0) {
                     alert('Couldn\'t read audio');
                 } else {
@@ -362,7 +375,7 @@
                 document.getElementById('recordButton').disabled = '';
                 document.getElementById('endSessionButton').disabled = '';
 
-            }, 3000);
+            }, 30000);
         }
 
         function endSession() {
