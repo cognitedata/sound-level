@@ -17,41 +17,83 @@
             padding: 0;
         }
         #buttonrow { width: 100%; position: absolute; top: 0; text-align: center; }
-
+        #meter { width: 100%; position: absolute; bottom: 0; text-align: center; }
+        #floating-panel {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 5;
+            background-color: #fff;
+            padding: 5px;
+            border: 1px solid #999;
+            text-align: center;
+            font-family: 'Roboto','sans-serif';
+            line-height: 30px;
+            padding-left: 10px;
+        }
     </style>
 </head>
 <body>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"
+        integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+        crossorigin="anonymous"></script>
+    <script type="text/javascript" src="volume-meter.js"></script>
     <div id="map"></div>
     <script>
-        var map;
+        var sampleCount;
+        var sampleSum;
+        var sessionId;
+        var latitude;
+        var longitude;
+        var sessionMap = {};
+        var heatmapPoints = null;
+
+        var map, usermarker;
         function initMap() {
             map = new google.maps.Map(document.getElementById('map'), {
-                center: {lat: -34.397, lng: 150.644},
-                zoom: 16
+                center: { lat: 59.8995116000, lng: 10.6745296 },
+                zoom: 16,
+                disableDefaultUI: false /*
+                mapTypeControl: false,
+                zoomControl: false,
+                scaleControl: false,
+                streetViewControl: false,
+                rotateControl: false,
+                fullscreenControl: false*/
             });
 
-            var heatmapData = [];
-            var magnitude = 10;
-            heatmapData.push({ location: new google.maps.LatLng(59.9039333, 10.6343522), weight: 140 });
-            heatmapData.push({ location: new google.maps.LatLng(59.9038666, 10.6343522), weight: 60 });
-            heatmapData.push({ location: new google.maps.LatLng(59.9037999, 10.6343522), weight: 60 });
+            heatmapPoints = new google.maps.MVCArray([]);
+            heatmapPoints.push({ location: new google.maps.LatLng(59.9039333, 10.6343522), weight: 140 });
+            heatmapPoints.push({ location: new google.maps.LatLng(59.9038666, 10.6343522), weight: 60 });
+            heatmapPoints.push({ location: new google.maps.LatLng(59.9037999, 10.6343522), weight: 60 });
+
             var heatmap = new google.maps.visualization.HeatmapLayer({
-                data: heatmapData,
+                data: heatmapPoints,
                 dissipating: true,
                 maxIntensity: 140, // dB
                 radius: 40,
                 map: map
             });
+            userMarker = new google.maps.Marker({
+                position: new google.maps.LatLng(-34.397, 150.644),
+                map: map,
+                icon: 'bluecircle.png'
+            });
         }
 
         function geo_success(position) {
             console.log(position.coords);
+            latitude = position.coords.latitude;
+            longitude = position.coords.longitude;
             if (map) {
                 var pos = {
                     lat: position.coords.latitude,
                     lng: position.coords.longitude
                 };
-                map.setCenter(pos);
+                if (!sessionId) {
+                    map.setCenter(pos);
+                }
+                userMarker.setPosition(pos);
             }
         }
         function geo_error() {
@@ -64,11 +106,284 @@
         };
         var wpid = navigator.geolocation.watchPosition(geo_success, geo_error, geo_options);
 
+
+
+        // Sound measuring
+
+        var audioContext = null;
+        var meter = null;
+        var canvasContext = null;
+        var WIDTH=500;
+        var HEIGHT=50;
+        var rafID = null;
+
+        window.onload = function() {
+
+            // grab our canvas
+            canvasContext = document.getElementById( "meter" ).getContext("2d");
+
+            // monkeypatch Web Audio
+            window.AudioContext = window.AudioContext || window.webkitAudioContext;
+
+            // grab an audio context
+            audioContext = new AudioContext();
+
+            // Attempt to get audio input
+            try {
+                // monkeypatch getUserMedia
+                navigator.getUserMedia =
+                    navigator.getUserMedia ||
+                    navigator.webkitGetUserMedia ||
+                    navigator.mozGetUserMedia;
+
+                // ask for an audio input
+                navigator.getUserMedia(
+                    {
+                        "audio": {
+                            "mandatory": {
+                                "googEchoCancellation": "false",
+                                "googAutoGainControl": "false",
+                                "googNoiseSuppression": "false",
+                                "googHighpassFilter": "false"
+                            },
+                            "optional": []
+                        },
+                    }, onMicrophoneGranted, onMicrophoneDenied);
+            } catch (e) {
+                alert('getUserMedia threw exception :' + e);
+            }
+
+        };
+
+        function onMicrophoneDenied() {
+            alert('Stream generation failed.');
+        }
+
+        var mediaStreamSource = null;
+
+        function onMicrophoneGranted(stream) {
+            // Create an AudioNode from the stream.
+            mediaStreamSource = audioContext.createMediaStreamSource(stream);
+
+            // Create a new volume meter and connect it.
+            meter = createAudioMeter(audioContext, 0.95);
+            mediaStreamSource.connect(meter);
+
+            // kick off the visual updating
+            onLevelChange();
+        }
+
+        function onLevelChange( time ) {
+            // clear the background
+            canvasContext.clearRect(0,0,WIDTH,HEIGHT);
+
+            // check if we're currently clipping
+            if (meter.checkClipping())
+                canvasContext.fillStyle = "red";
+            else
+                canvasContext.fillStyle = "green";
+
+            // console.log(meter.volume);
+            sampleCount ++;
+            sampleSum += meter.volume;
+
+            // draw a bar based on the current volume
+            canvasContext.fillRect(0, 0, meter.volume * WIDTH * 1.4, HEIGHT);
+
+            // set up the next visual callback
+            rafID = window.requestAnimationFrame( onLevelChange );
+        }
+
+
+        function loadAllSessions() {
+            // apiRequest('events/search?limit=1000&type=soundmetersession', null, function(data) {
+            apiRequest('events', null, function(data) {
+                console.log(data)
+                $('#sessionSelect option:gt(0)').remove(); // remove all options, but not the first
+                var $el = $("#sessionSelect");
+                data.data.items.forEach(function(session) {
+                    $el.append($("<option></option>").attr("value", session.id).text(session.description));
+                    sessionMap[session.id] = session;
+                });
+            });
+        }
+
+        loadAllSessions();
+
+        function apiRequest(path, body, onSuccess) {
+            var headers = {
+                'Accept':'application/json',
+                'api-key':'Yjc2ODJlMTUtYzk3My00YjMzLTkzMDMtMWViZmY2ZjJmNTI4'
+            };
+            if (body) {
+                headers['Content-Type'] =  'application/json';
+            }
+            $.ajax({
+                url: 'https://api.cognitedata.com/api/0.5/projects/stein/' + path,
+                method: body ? 'post' : 'get',
+                data: body ? JSON.stringify(body) : null,
+                dataType: 'json',
+                headers: headers,
+                success: onSuccess
+            })
+        }
+
+        function createNewSession() {
+            if (audioContext && audioContext.resume) {
+                try { audioContext.resume(); } catch(e) {};
+            }
+            var name = prompt('Give a name for the session');
+            if (name) {
+                document.getElementById('newSessionButton').disabled = 'disabled';
+                document.getElementById('recordButton').disabled = '';
+                document.getElementById('endSessionButton').disabled = '';
+                $('#sessionSelect option:gt(0)').remove(); // remove all options, but not the first
+
+                // Create new session (as a CDP event)
+                var now = new Date().getTime();
+                var body = {
+                    "items": [
+                        {
+                            "startTime": now,
+                            "description": name,
+                            "type": "soundmetersession",
+                            "source": "soundmeter"
+                        }
+                    ]
+                };
+                apiRequest('events', body, function (data) {
+                    console.log(data);
+                    sessionId = data.data.items[0].id;
+                    console.log('New session id: ' + sessionId);
+
+                    // Create matching time series
+                    var body = {items:[
+                            { name: 'soundsession-' + sessionId + '-level' },
+                            { name: 'soundsession-' + sessionId + '-lat' },
+                            { name: 'soundsession-' + sessionId + '-long' }
+                    ]};
+                    apiRequest('timeseries', body, function (data) {
+                        // Successfully created timeseries.
+                    });
+                });
+            }
+        }
+
+        function loadMeasurements() {
+            console.log('Loading measurements!');
+            sessionId = document.getElementById('sessionSelect').value;
+            if (sessionId) {
+                var startTime = sessionMap[sessionId].startTime;
+                console.log('StartTime: ' + startTime);
+
+                // Clear old points
+                while(heatmapPoints.length > 0) {
+                    heatmapPoints.pop();
+                }
+
+                var body =
+                {
+                    items:[
+                        { name: 'soundsession-' + sessionId + '-level' },
+                        { name: 'soundsession-' + sessionId + '-lat' },
+                        { name: 'soundsession-' + sessionId + '-long' }
+                    ],
+                    limit: 1000,
+                    start: '' + startTime
+                };
+                apiRequest('timeseries/dataquery', body, function (data) {
+                    console.log(data)
+                    var points = [];
+                    data.data.items.forEach(function(item) {
+                        item.datapoints.forEach(function(dataPoint) {
+                            var found = false;
+                            points.forEach(function(point) {
+                                if (point.timestamp === dataPoint.timestamp) {
+                                    point[item.name] = dataPoint.value;
+                                    found = true;
+                                }
+                            });
+                            if (!found) {
+                                var newPoint = { timestamp: dataPoint.timestamp };
+                                newPoint[item.name] = dataPoint.value;
+                                points.push(newPoint);
+                            }
+                        });
+                    });
+
+                    points.forEach(function(point) {
+                        heatmapPoints.push({ location: new google.maps.LatLng(
+                            point['soundsession-' + sessionId + '-lat'],
+                            point['soundsession-' + sessionId + '-long']),
+                            weight: point['soundsession-' + sessionId + '-level'] * 140});
+                    })
+
+                });
+
+            }
+        }
+
+        function measureAndRecord() {
+            document.getElementById('recordButton').disabled = 'disabled';
+            document.getElementById('endSessionButton').disabled = 'disabled';
+            // Reset sample interval
+            sampleCount = 0;
+            sampleSum = 0;
+            // Sample for 3 seconds, then record to CDP
+            setTimeout(function() {
+                if (sampleCount === 0) {
+                    alert('Couldn\'t read audio');
+                } else {
+                    var now = new Date().getTime();
+                    var sampleValue = sampleSum / sampleCount;
+                    var body =
+                    {
+                        items: [
+                            {
+                                name: 'soundsession-' + sessionId + '-level',
+                                datapoints: [{ timestamp: now, value: sampleValue } ]
+                            },
+                            {
+                                name: 'soundsession-' + sessionId + '-lat',
+                                datapoints: [{ timestamp: now, value: latitude } ]
+                            },
+                            {
+                                name: 'soundsession-' + sessionId + '-long',
+                                datapoints: [{ timestamp: now, value: longitude } ]
+                            }
+                    ]
+                    };
+                    console.log(body);
+                    apiRequest('timeseries/data ', body, function (data) {
+                        // Successfully recorded timeseries data.
+                    });
+
+                }
+                document.getElementById('recordButton').disabled = '';
+                document.getElementById('endSessionButton').disabled = '';
+
+            }, 3000);
+        }
+
+        function endSession() {
+            document.getElementById('newSessionButton').disabled = '';
+            document.getElementById('recordButton').disabled = 'disabled';
+            document.getElementById('endSessionButton').disabled = '';
+            loadAllSessions();
+        }
+
     </script>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDVjAzR2qmxK-dwAi7WYR2auureZWjxXTg&libraries=visualization&callback=initMap" async defer></script>
-    <div id="buttonrow">
-        <button>New session</button><select><option>Hello</option></select>
+    <div id="floating-panel">
+        Recorded sessions:
+        <select id="sessionSelect" onChange="loadMeasurements()">
+            <option value="">(none - track current position)</option>
+        </select>
+        <button id="newSessionButton" onclick="createNewSession()">New session</button>
+        <button id="recordButton" onclick="measureAndRecord()" disabled>Measure</button>
+        <button id="endSessionButton" onclick="endSession()" disabled>End session</button>
     </div>
+    <canvas id="meter" width="500" height="50"></canvas>
 
 </body>
 </html>

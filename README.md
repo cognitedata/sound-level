@@ -27,7 +27,7 @@ An example of using the CDP as a base for sound level measurements.
   and the end time of the CDP event is updated to match the time of this latest sound level measurement
 
 ### Viewing
- - All sound-level events from 2018-10-15 to the current time is read
+ - All sound-level events are read
  - For each event, add an item to the session dropdown list
  - When a user selects a session, read the start and end time of the event, and query the correspoding time series data
  - Finally plot the data on the map
