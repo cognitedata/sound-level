@@ -315,7 +315,7 @@
                         heatmapPoints.push({ location: new google.maps.LatLng(
                             point['soundsession-' + sessionId + '-lat'],
                             point['soundsession-' + sessionId + '-long']),
-                            weight: point['soundsession-' + sessionId + '-level'] * 140});
+                            weight: point['soundsession-' + sessionId + '-level'] * 140 * 40});
                     })
 
                 });
