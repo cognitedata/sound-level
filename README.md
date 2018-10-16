@@ -4,12 +4,12 @@ An example of using the CDP as a base for sound level measurements.
 ## How it works:
 
 ### Measure an area
-1. Click "Start new measurement"
+1. Click "Start new session"
 2. Walk to a location
 3. Click "Measure"
 4. Save measurement
 5. Repeat from 2. until finished
-6. Click "End measurement"
+6. Click "End session"
 
 ### View previous measurements
 1. Select the measurement to view from the dropdown box
