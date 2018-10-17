@@ -219,7 +219,7 @@
 
         function loadAllSessions() {
             // apiRequest('events/search?limit=1000&type=soundmetersession', null, function(data) {
-            apiRequest('events', null, function(data) {
+            apiRequest('events?limit=1000', null, function(data) {
                 console.log(data)
                 $('#sessionSelect option:gt(0)').remove(); // remove all options, but not the first
                 var $el = $("#sessionSelect");
