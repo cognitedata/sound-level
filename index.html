@@ -47,7 +47,7 @@
         var longitude;
         var sessionMap = {};
         var heatmapPoints = null;
-        var recordingSeconds = 30;
+        var recordingSeconds = 3;
         var secondsLeft = 0;
 
         setInterval(function() {
@@ -357,7 +357,7 @@
         function measureAndRecord() {
             document.getElementById('recordButton').disabled = 'disabled';
             document.getElementById('endSessionButton').disabled = 'disabled';
-            secondsLeft = 30;
+            secondsLeft = 3;
             document.getElementById('recordButton').innerHTML = 'Measuring (' + secondsLeft + ' s left';
             // Reset sample interval
             sampleCount = 0;
@@ -396,7 +396,7 @@
                 document.getElementById('recordButton').disabled = '';
                 document.getElementById('endSessionButton').disabled = '';
 
-            }, 30000);
+            }, 3000);
         }
 
         function endSession() {
