@@ -333,13 +333,22 @@
                         });
                     });
 
+                    var avgLat = 0, avgLong = 0;
                     points.forEach(function(point) {
-                        heatmapPoints.push({ location: new google.maps.LatLng(
-                            point['soundsession-' + sessionId + '-lat'],
-                            point['soundsession-' + sessionId + '-long']),
-                            weight: point['soundsession-' + sessionId + '-level'] * 140 * 10});
-                    })
-
+                        var lat = point['soundsession-' + sessionId + '-lat'];
+                        var long = point['soundsession-' + sessionId + '-long'];
+                        var weight = point['soundsession-' + sessionId + '-level'];
+                        heatmapPoints.push({ location: new google.maps.LatLng(lat, long), weight: weight * 140 * 10});
+                        avgLat += lat;
+                        avgLong += long;
+                    });
+                    if (points.length > 0) {
+                        avgLat /= points.length;
+                        avgLong /= points.length;
+                        if (map) {
+                            map.setCenter({ lat: avgLat, lng: avgLong });
+                        }
+                    }
                 });
 
             }
