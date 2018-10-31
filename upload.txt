@@ -1,0 +1,24 @@
+
+Diagram setup
+
+1. Click "New diagram"
+2. Select diagram image file
+3. File is uploaded to server
+
+4. Click "New tag" button
+5. Enter tag name for new tag
+6. Drag tag to correct location
+(repeat from 4. until done)
+
+
+Measurements
+
+1. Click "Scan tag" button
+2. Click screen to take picture
+3. File is uploaded to OCR and we get text response as JSON
+4. Search all returned strings for matches in tag
+5. If match found, highlight matched tag
+6. Click "Measure"
+7. Draw measured level on heatmap
+
+
