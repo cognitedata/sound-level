@@ -62,3 +62,6 @@ typings/
 
 # Webstorm
 .idea
+
+# Google Cloud Vision credentials
+SteinCDPTenant-c84b80161b64.json

@@ -1,0 +1,25 @@
+{
+  "name": "sound-level",
+  "version": "1.0.0",
+  "description": "An example of using the CDP as a base for sound level measurements.",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cognitedata/sound-level.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cognitedata/sound-level/issues"
+  },
+  "homepage": "https://github.com/cognitedata/sound-level#readme",
+  "dependencies": {
+    "@google-cloud/vision": "^0.22.1",
+    "body-parser": "^1.18.3",
+    "express": "^4.16.4"
+  }
+}
