@@ -4,6 +4,7 @@
     <title>Sound-level</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="initial-scale=1.0">
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <style>
         /* Always set the map height explicitly to define the size of the div
          * element that contains the map. */
@@ -44,6 +45,8 @@
         #screenshot video {
             width: 100%;
         }
+        #draggable, #draggable2, #draggable3, .ui-widget-content { background-color: #ffdd00; padding: 1px; display: inline-block; margin: 1px 1px 1px 1px; left: 50%; top: 50%; }
+        p { clear:both; margin:0; padding: 3px; border: 1px solid black; }
     </style>
 </head>
 <body>
@@ -62,14 +65,43 @@
     <video autoplay onclick="grabScreenshot()"></video>
     <img src="">
 </div>
+
+<div id="map">
+    <div class="ui-widget-content">
+        <p>86RQP3101</p>
+    </div>
+
+    <div class="ui-widget-content">
+        <p>64BL1019</p>
+    </div>
+
+    <div class="ui-widget-content">
+        <p>50BL1033</p>
+    </div>
+</div>
 <canvas id="meter" width="500" height="50"></canvas>
 
     <script src="https://code.jquery.com/jquery-3.3.1.min.js"
         integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
         crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
     <script type="text/javascript" src="volume-meter.js"></script>
-    <div id="map"></div>
+
     <script>
+        $( function() {
+            $( "#draggable" ).draggable({ helper: "original" });
+            $( "#draggable2" ).draggable({ opacity: 0.7, helper: "clone" });
+            $( "#draggable3" ).draggable({
+                cursorAt: { top: -12, left: -20 },
+                helper: function( event ) {
+                    return $( "<div class='ui-widget-header'>I'm a custom helper</div>" );
+                }
+            });
+            $( ".ui-widget-content" ).draggable({ stack: ".ui-widget-content",
+                cursor: "move"
+            });
+        } );
+
         var sampleCount;
         var sampleSum;
         var sessionId;
