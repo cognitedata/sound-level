@@ -45,8 +45,8 @@
         #screenshot video {
             width: 100%;
         }
-        #draggable, #draggable2, #draggable3, .ui-widget-content { background-color: #ffdd00; padding: 1px; display: inline-block; margin: 1px 1px 1px 1px; left: 50%; top: 50%; }
-        p { clear:both; margin:0; padding: 3px; border: 1px solid black; }
+        #draggable, #draggable2, #draggable3, .ui-widget-content { cursor: move;  background-color: #ffdd00; padding: 1px; display: inline-block; margin: 1px 1px 1px 1px; left: 50%; top: 50%; border: 1px solid black;  }
+        p { clear:both; margin:0; padding: 3px; }
     </style>
 </head>
 <body>
@@ -75,7 +75,7 @@
         <p>64BL1019</p>
     </div>
 
-    <div class="ui-widget-content">
+    <div id="tagTemplate" class="ui-widget-content">
         <p>50BL1033</p>
     </div>
 </div>
@@ -89,18 +89,28 @@
 
     <script>
         $( function() {
-            $( "#draggable" ).draggable({ helper: "original" });
-            $( "#draggable2" ).draggable({ opacity: 0.7, helper: "clone" });
-            $( "#draggable3" ).draggable({
-                cursorAt: { top: -12, left: -20 },
-                helper: function( event ) {
-                    return $( "<div class='ui-widget-header'>I'm a custom helper</div>" );
-                }
-            });
             $( ".ui-widget-content" ).draggable({ stack: ".ui-widget-content",
                 cursor: "move"
             });
         } );
+
+        function createNewTag() {
+            var tagId = prompt('Enter tag ID for the new tag:');
+            if (tagId) {
+                var tagTemplate = document.getElementById('tagTemplate');
+                var newTagEl = tagTemplate.cloneNode(false);
+                var newElId = 'tagEl-' + Math.random();
+                newTagEl.style.left = '50%';
+                newTagEl.style.top = '50%';
+                newTagEl.innerHTML = '<p>' + tagId + '</p>';
+                newTagEl.id = newElId;
+                document.getElementById('map').appendChild(newTagEl);
+                $(newTagEl).draggable({
+                    stack: ".ui-widget-content",
+                    cursor: "move"
+                });
+            }
+        }
 
         var sampleCount;
         var sampleSum;
