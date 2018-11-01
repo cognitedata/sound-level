@@ -94,6 +94,22 @@
             });
         } );
 
+
+        function highlightMatchingTag(text) {
+            text = text.toLowerCase();
+            var tagTextEls = document.querySelectorAll('.ui-widget-content p');
+            if (tagTextEls && tagTextEls.length) {
+                for (var i = 0; i < tagTextEls.length; i++) {
+                    var tagTextEl = tagTextEls[i];
+                    if (text.indexOf(tagTextEl.innerHTML.toLowerCase()) > -1) {
+                        tagTextEl.style.backgroundColor = 'yellow';
+                    } else {
+                        tagTextEl.style.backgroundColor = '';
+                    }
+                }
+            }
+        }
+
         function createNewTag() {
             var tagId = prompt('Enter tag ID for the new tag:');
             if (tagId) {
@@ -438,7 +454,9 @@
                 success: function (data) {
                     console.log(data);
                     if (data && data.results && data.results[0] && data.results[0].fullTextAnnotation && data.results[0].fullTextAnnotation.text ) {
+
                         alert('Text found in image:\n\n' + data.results[0].fullTextAnnotation.text);
+                        highlightMatchingTag(data.results[0].fullTextAnnotation.text);
                     } else {
                         alert('Found no text in image');
                     }
