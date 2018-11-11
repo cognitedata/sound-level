@@ -8,7 +8,8 @@
     <style>
         /* Always set the map height explicitly to define the size of the div
          * element that contains the map. */
-        #map {
+        #main {
+            position: relative;
             height: 100%;
         }
         /* Optional: Makes the sample page fill the window. */
@@ -16,9 +17,6 @@
             height: 100%;
             margin: 0;
             padding: 0;
-            background-image: url(diagram.png);
-            background-repeat: no-repeat;
-            background-position: center;
         }
         #buttonrow { width: 100%; position: absolute; top: 0; text-align: center; }
         #meter { width: 100%; position: absolute; bottom: 0; text-align: center; }
@@ -42,6 +40,9 @@
             z-index: 100;
             display: none;
         }
+        #map { position: absolute; border: 0; padding: 0; }
+        #heatmap { position: absolute; width: 100%; height: 100%; border: 0; padding: 0; }
+        #tags { position: absolute; width: 100%; height: 100%; border: 0; padding: 0; }
         #screenshot video {
             width: 100%;
         }
@@ -66,17 +67,22 @@
     <img src="">
 </div>
 
-<div id="map">
-    <div class="ui-widget-content">
-        <p>86RQP3101</p>
-    </div>
+<div id="main">
+    <img id="map" src="diagram.png" />
+    <canvas id="heatmap">
+    </canvas>
+    <div id="tags">
+        <div class="ui-widget-content">
+            <p>86RQP3101</p>
+        </div>
 
-    <div class="ui-widget-content">
-        <p>64BL1019</p>
-    </div>
+        <div class="ui-widget-content">
+            <p>64BL1019</p>
+        </div>
 
-    <div id="tagTemplate" class="ui-widget-content">
-        <p>50BL1033</p>
+        <div id="tagTemplate" class="ui-widget-content">
+            <p>50BL1033</p>
+        </div>
     </div>
 </div>
 <canvas id="meter" width="500" height="50"></canvas>
