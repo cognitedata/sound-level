@@ -40,9 +40,9 @@
             z-index: 100;
             display: none;
         }
-        #map { position: absolute; border: 0; padding: 0; }
-        #heatmap { position: absolute; width: 100%; height: 100%; border: 0; padding: 0; }
-        #tags { position: absolute; width: 100%; height: 100%; border: 0; padding: 0; }
+        #map { position: absolute; width: 585px; height: 648px; border: 0; padding: 0; }
+        #heatmap { position: absolute; width: 585px; height: 648px; border: 0; padding: 0; }
+        #tags { position: absolute; width: 585px; height: 648px; border: 0; padding: 0; }
         #screenshot video {
             width: 100%;
         }
@@ -69,14 +69,14 @@
 
 <div id="main">
     <img id="map" src="diagram.png" />
-    <canvas id="heatmap">
+    <canvas width="585" height="648" id="heatmap">
     </canvas>
     <div id="tags">
-        <div class="ui-widget-content">
+        <div id="tag1" class="ui-widget-content">
             <p>86RQP3101</p>
         </div>
 
-        <div class="ui-widget-content">
+        <div id="tag2" class="ui-widget-content">
             <p>64BL1019</p>
         </div>
 
@@ -96,7 +96,8 @@
     <script>
         $( function() {
             $( ".ui-widget-content" ).draggable({ stack: ".ui-widget-content",
-                cursor: "move"
+                cursor: "move",
+                stop: function() { drawHeatmap(); }
             });
         } );
 
@@ -521,6 +522,99 @@
             document.getElementById('endSessionButton').disabled = '';
             loadAllSessions();
         }
+
+        var mapWidth = 585;
+        var mapHeight = 648;
+        var heatmap = document.getElementById("heatmap");
+        var ctx = heatmap.getContext("2d");
+        var pixels = ctx.createImageData(mapWidth, mapHeight);
+        var radius = 50;
+
+        var tagMeasurements = {
+            tagTemplate: 1,
+            tag1: 0.7,
+            tag2: 0.3
+        };
+
+
+        function drawHeatmap() {
+            var i, x, y;
+            // Get the positions of the tags
+            var tagEls = document.querySelectorAll('.ui-widget-content');
+            var tags = [];
+            for (i = 0; i < tagEls.length; i++) {
+                tags.push({
+                    x: tagEls[i].offsetLeft + tagEls[i].offsetWidth / 2,
+                    y: tagEls[i].offsetTop + tagEls[i].offsetHeight / 2,
+                    id: tagEls[i].id
+                });
+                console.log(tagEls[0].offsetLeft);
+            }
+
+
+            // Calculate pixel values for the whole map
+            for (y = 0; y < mapHeight; y++) {
+                for (x = 0; x < mapWidth; x++) {
+                    var totalWeight = 0;
+                    var value = 0;
+                    var pixelWeight = 0;
+                    tags.forEach(function(tag) {
+                        var distance = Math.sqrt(Math.pow(x - tag.x, 2) + Math.pow(y - tag.y, 2));
+                        var tagValue = tagMeasurements[tag.id];
+                        if (distance < radius) {
+                            value += tagValue * 1;
+                            totalWeight += 1;
+                            pixelWeight = 1;
+                        } else if (distance < radius * 2) {
+                            var weight = 1 - (distance - radius ) / radius;
+                            value += tagValue * weight;
+                            totalWeight += weight;
+                            pixelWeight = Math.max(weight, pixelWeight);
+                        }
+                    });
+                    if (totalWeight > 0) {
+                        value = value / totalWeight;
+                    }
+
+                    var colMap = [
+                        { r: 0, g: 0, b: 0},
+                        { r: 0xce, g: 0xe2, b: 0xaf},
+                        { r: 0xb8, g: 0xd3, b: 0x82},
+                        { r: 0xfb, g: 0xee, b: 0x64},
+                        { r: 0xfe, g: 0xd1, b: 0x02},
+                        { r: 0xf3, g: 0x8d, b: 0x07},
+                        { r: 0xe7, g: 0x2c, b: 0x35},
+                        { r: 0xbe, g: 0x94, b: 0xc6},
+                        { r: 0x83, g: 0x35, b: 0x8b},
+                        { r: 0x5b, g: 0x34, b: 0x8f}
+                    ];
+                    var colMapFracIndex = (colMap.length-1.1) * value;
+                    var colMapIndex = Math.floor(colMapFracIndex);
+                    var fraction = colMapFracIndex - colMapIndex;
+
+                    if (value == NaN) {
+                        console.log(value);
+                    }
+                    var r1 = colMap[colMapIndex].r;
+                    var g1 = colMap[colMapIndex].g;
+                    var b1 = colMap[colMapIndex].b;
+                    var r2 = colMap[colMapIndex+1].r;
+                    var g2 = colMap[colMapIndex+1].g;
+                    var b2 = colMap[colMapIndex+1].b;
+
+                    var r = (r1 * (1-fraction) + r2 * fraction) ;
+                    var g = (g1 * (1-fraction) + g2 * fraction) ;
+                    var b = (b1 * (1-fraction) + b2 * fraction) ;
+
+                    pixels.data[(y * mapWidth + x) * 4 + 0] = r;
+                    pixels.data[(y * mapWidth + x) * 4 + 1] = g;
+                    pixels.data[(y * mapWidth + x) * 4 + 2] = b;
+                    pixels.data[(y * mapWidth + x) * 4 + 3] = pixelWeight * 255; // a
+                }
+            }
+            ctx.putImageData(pixels, 0, 0 );
+        }
+        drawHeatmap();
 
     </script>
 
