@@ -491,7 +491,7 @@
                 } else {
                     var now = new Date().getTime();
                     var sampleValue = sampleSum / sampleCount;
-                    tagMeasurements['tagEl-' + tagId] = Math.min(sampleValue, 1);
+                    tagMeasurements['tagEl-' + tagId] = Math.min(sampleValue * 4, 1);
                     drawHeatmap();
                     var body =
                     {
