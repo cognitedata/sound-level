@@ -42,7 +42,7 @@
         }
         #map { position: absolute; width: 585px; height: 648px; border: 0; padding: 0; }
         #heatmap { position: absolute; width: 585px; height: 648px; border: 0; padding: 0; }
-        #tags { position: absolute; width: 585px; height: 648px; border: 0; padding: 0; }
+        #tags { position: absolute; width: 100%; height: 648px; border: 0; padding: 0; }
         #screenshot video {
             width: 100%;
         }
@@ -99,6 +99,7 @@
                 cursor: "move",
                 stop: function() { drawHeatmap(); }
             });
+            drawHeatmap();
         } );
 
 
@@ -108,8 +109,11 @@
             if (tagTextEls && tagTextEls.length) {
                 for (var i = 0; i < tagTextEls.length; i++) {
                     var tagTextEl = tagTextEls[i];
-                    if (text.indexOf(tagTextEl.innerHTML.toLowerCase()) > -1) {
+                    if (text.indexOf(tagTextEl.innerText.toLowerCase()) > -1) {
                         tagTextEl.style.backgroundColor = 'yellow';
+
+                        alert('Click OK to start noise measurement!')
+                        measureAndRecord(tagTextEl.innerText);
                     } else {
                         tagTextEl.style.backgroundColor = '';
                     }
@@ -122,15 +126,16 @@
             if (tagId) {
                 var tagTemplate = document.getElementById('tagTemplate');
                 var newTagEl = tagTemplate.cloneNode(false);
-                var newElId = 'tagEl-' + Math.random();
+                var newElId = 'tagEl-' + tagId;
                 newTagEl.style.left = '50%';
                 newTagEl.style.top = '50%';
                 newTagEl.innerHTML = '<p>' + tagId + '</p>';
                 newTagEl.id = newElId;
-                document.getElementById('map').appendChild(newTagEl);
+                document.getElementById('tags').appendChild(newTagEl);
                 $(newTagEl).draggable({
                     stack: ".ui-widget-content",
-                    cursor: "move"
+                    cursor: "move",
+                    stop: function() { drawHeatmap(); }
                 });
             }
         }
@@ -246,7 +251,6 @@
             } catch (e) {
                 alert('getUserMedia threw exception :' + e);
             }
-
         };
 
         function onMicrophoneDenied() {
@@ -471,7 +475,7 @@
             })
         }
 
-        function measureAndRecord() {
+        function measureAndRecord(tagId) {
             document.getElementById('recordButton').disabled = 'disabled';
             document.getElementById('endSessionButton').disabled = 'disabled';
             secondsLeft = 3;
@@ -487,6 +491,8 @@
                 } else {
                     var now = new Date().getTime();
                     var sampleValue = sampleSum / sampleCount;
+                    tagMeasurements['tagEl-' + tagId] = Math.min(sampleValue, 1);
+                    drawHeatmap();
                     var body =
                     {
                         items: [
@@ -504,10 +510,12 @@
                             }
                     ]
                     };
-                    console.log(body);
+                    // console.log(body);
+                    /*
                     apiRequest('timeseries/data ', body, function (data) {
                         // Successfully recorded timeseries data.
                     });
+                    */
 
                 }
                 document.getElementById('recordButton').disabled = '';
@@ -528,7 +536,7 @@
         var heatmap = document.getElementById("heatmap");
         var ctx = heatmap.getContext("2d");
         var pixels = ctx.createImageData(mapWidth, mapHeight);
-        var radius = 50;
+        var radius = 40;
 
         var tagMeasurements = {
             tagTemplate: 1,
@@ -543,14 +551,16 @@
             var tagEls = document.querySelectorAll('.ui-widget-content');
             var tags = [];
             for (i = 0; i < tagEls.length; i++) {
-                tags.push({
-                    x: tagEls[i].offsetLeft + tagEls[i].offsetWidth / 2,
-                    y: tagEls[i].offsetTop + tagEls[i].offsetHeight / 2,
-                    id: tagEls[i].id
-                });
-                console.log(tagEls[0].offsetLeft);
+                console.log(tagEls[i].id);
+                var tagValue = tagMeasurements[tagEls[i].id];
+                if (tagValue !== undefined) {
+                    tags.push({
+                        x: tagEls[i].offsetLeft + tagEls[i].offsetWidth / 2,
+                        y: tagEls[i].offsetTop + tagEls[i].offsetHeight / 2,
+                        value: tagValue
+                    });
+                }
             }
-
 
             // Calculate pixel values for the whole map
             for (y = 0; y < mapHeight; y++) {
@@ -560,7 +570,7 @@
                     var pixelWeight = 0;
                     tags.forEach(function(tag) {
                         var distance = Math.sqrt(Math.pow(x - tag.x, 2) + Math.pow(y - tag.y, 2));
-                        var tagValue = tagMeasurements[tag.id];
+                        var tagValue = tag.value;
                         if (distance < radius) {
                             value += tagValue * 1;
                             totalWeight += 1;
@@ -586,15 +596,14 @@
                         { r: 0xe7, g: 0x2c, b: 0x35},
                         { r: 0xbe, g: 0x94, b: 0xc6},
                         { r: 0x83, g: 0x35, b: 0x8b},
+                        { r: 0x5b, g: 0x34, b: 0x8f},
                         { r: 0x5b, g: 0x34, b: 0x8f}
                     ];
-                    var colMapFracIndex = (colMap.length-1.1) * value;
+                    var colMapFracIndex = (colMap.length-1.5) * value;
                     var colMapIndex = Math.floor(colMapFracIndex);
                     var fraction = colMapFracIndex - colMapIndex;
+                    fraction = 0;
 
-                    if (value == NaN) {
-                        console.log(value);
-                    }
                     var r1 = colMap[colMapIndex].r;
                     var g1 = colMap[colMapIndex].g;
                     var b1 = colMap[colMapIndex].b;
